@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日常办公助手</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+    padding: 20px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+  }
+  .card:hover { transform: translateY(-4px); }
+  .card h2 {
+    color: #667eea;
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .clock {
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .clock .time {
+    font-size: 48px;
+    font-weight: bold;
+    color: #667eea;
+    letter-spacing: 2px;
+  }
+  .clock .date {
+    font-size: 16px;
+    color: #888;
+    margin-top: 10px;
+  }
+  .clock .week {
+    font-size: 14px;
+    color: #aaa;
+    margin-top: 5px;
+  }
+  .input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  input, button, select, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  input:focus, textarea:focus { border-color: #667eea; }
+  button {
+    background: #667eea;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    padding: 8px 16px;
+  }
+  button:hover { background: #5568d3; }
+  button.danger { background: #f56565; }
+  button.danger:hover { background: #e53e3e; }
+  ul { list-style: none; max-height: 220px; overflow-y: auto; }
+  li {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  li.done span { text-decoration: line-through; color: #aaa; }
+  li input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  li .del {
+    margin-left: auto;
+    background: transparent;
+    color: #f56565;
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+  }
+  .calc {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .calc button {
+    padding: 12px;
+    font-size: 16px;
+  }
+  .calc-display {
+    grid-column: span 4;
+    text-align: right;
+    padding: 14px;
+    font-size: 22px;
+    background: #f7f7f7;
+    border-radius: 6px;
+    min-height: 50px;
+    margin-bottom: 4px;
+  }
+  .calc button.op { background: #764ba2; }
+  .calc button.eq { background: #48bb78; }
+  .calc button.clr { background: #ed8936; }
+  .counter { font-size: 28px; font-weight: bold; color: #667eea; }
+  .water-progress {
+    height: 200px;
+    width: 80px;
+    background: #e0e0e0;
+    border-radius: 40px;
+    margin: 10px auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .water-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 40px;
+    transition: height 0.5s;
+  }
+  .water-info { text-align: center; }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat-item {
+    background: #f7f7f7;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .stat-item .num {
+    font-size: 24px;
+    font-weight: bold;
+    color: #667eea;
+  }
+  .stat-item .lbl {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+  }
+  .footer {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    margin-top: 30px;
+    font-size: 13px;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 时钟卡片 -->
+  <div class="card clock">
+    <h2>⏰ 实时时钟</h2>
+    <div class="time" id="time">00:00:00</div>
+    <div class="date" id="date">--</div>
+    <div class="week" id="week">--</div>
+  </div>
+
+  <!-- 待办事项 -->
+  <div class="card">
+    <h2>📝 今日待办</h2>
+    <div class="input-group">
+      <input type="text" id="todoInput" placeholder="输入待办事项后回车..." style="flex:1">
+      <button onclick="addTodo()">添加</button>
+    </div>
+    <ul id="todoList"></ul>
+  </div>
+
+  <!-- 快捷记事 -->
+  <div class="card">
+    <h2>📒 快捷记事</h2>
+    <textarea id="noteArea" placeholder="随手记录灵感、会议要点、联系方式..." oninput="saveNote()"></textarea>
+    <div style="margin-top:8px;font-size:12px;color:#888;" id="noteStatus">已自动保存</div>
+  </div>
+
+  <!-- 计算器 -->
+  <div class="card">
+    <h2>🧮 计算器</h2>
+    <div class="calc">
+      <div class="calc-display" id="calcDisplay">0</div>
+      <button class="clr" onclick="calcClear()">C</button>
+      <button onclick="calcInput('(')">(</button>
+      <button onclick="calcInput(')')">)</button>
+      <button class="op" onclick="calcOp('/')">÷</button>
+      <button onclick="calcNum('7')">7</button>
+      <button onclick="calcNum('8')">8</button>
+      <button onclick="calcNum('9')">9</button>
+      <button class="op" onclick="calcOp('*')">×</button>
+      <button onclick="calcNum('4')">4</button>
+      <button onclick="calcNum('5')">5</button>
+      <button onclick="calcNum('6')">6</button>
+      <button class="op" onclick="calcOp('-')">−</button>
+      <button onclick="calcNum('1')">1</button>
+      <button onclick="calcNum('2')">2</button>
+      <button onclick="calcNum('3')">3</button>
+      <button class="op" onclick="calcOp('+')">+</button>
+      <button onclick="calcNum('0')" style="grid-column: span 2">0</button>
+      <button onclick="calcInput('.')">.</button>
+      <button class="eq" onclick="calcEq()">=</button>
+    </div>
+  </div>
+
+  <!-- 番茄钟 -->
+  <div class="card">
+    <h2>🍅 番茄工作法</h2>
+    <div style="text-align:center;">
+      <div class="counter" id="pomodoroDisplay">25:00</div>
+      <div style="margin:15px 0;">
+        <button onclick="pomoStart()">开始</button>
+        <button class="danger" onclick="pomoReset()">重置</button>
+      </div>
+      <div style="font-size:13px;color:#888;">已完成番茄数：<span id="pomoCount" style="color:#667eea;font-weight:bold;">0</span></div>
+    </div>
+  </div>
+
+  <!-- 饮水提醒 -->
+  <div class="card">
+    <h2>💧 饮水打卡</h2>
+    <div class="water-progress">
+      <div class="water-fill" id="waterFill" style="height:0%"></div>
+    </div>
+    <div class="water-info">
+      <div><span id="waterCups">0</span> / 8 杯</div>
+      <button style="margin-top:10px;" onclick="addWater()">+1杯 (250ml)</button>
+      <button class="danger" onclick="resetWater()" style="margin-top:10px;margin-left:6px;">重置</button>
+    </div>
+  </div>
+
+  <!-- 今日统计 -->
+  <div class="card">
+    <h2>📊 今日统计</h2>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <div class="num" id="statTodo">0</div>
+        <div class="lbl">完成待办</div>
+      </div>
+      <div class="stat-item">
+        <div class="num" id="statPomo">0</div>
+        <div class="lbl">番茄钟</div>
+      </div>
+      <div class="stat-item">
+        <div class="num" id="statWater">0</div>
+        <div class="lbl">饮水(杯)</div>
+      </div>
+      <div class="stat-item">
+        <div class="num" id="statWords">0</div>
+        <div class="lbl">记事字数</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">日常办公助手 · 数据保存在浏览器本地</div>
+
+<script>
+// ============ 实时时钟 ============
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('time').textContent =
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  document.getElementById('date').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const weeks = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  document.getElementById('week').textContent = weeks[now.getDay()];
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ============ 待办事项 ============
+let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+function renderTodos() {
+  const ul = document.getElementById('todoList');
+  ul.innerHTML = '';
+  todos.forEach((t, i) => {
+    const li = document.createElement('li');
+    li.className = t.done ? 'done' : '';
+    li.innerHTML = `<input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo(${i})">
+      <span>${t.text}</span>
+      <button class="del" onclick="delTodo(${i})">删除</button>`;
+    ul.appendChild(li);
+  });
+  updateStats();
+}
+function addTodo() {
+  const input = document.getElementById('todoInput');
+  const text = input.value.trim();
+  if (!text) return;
+  todos.push({ text, done: false });
+  input.value = '';
+  saveTodos();
+  renderTodos();
+}
+function toggleTodo(i) { todos[i].done = !todos[i].done; saveTodos(); renderTodos(); }
+function delTodo(i) { todos.splice(i,1); saveTodos(); renderTodos(); }
+function saveTodos() { localStorage.setItem('todos', JSON.stringify(todos)); }
+document.getElementById('todoInput').addEventListener('keydown', e => { if(e.key==='Enter') addTodo(); });
+renderTodos();
+
+// ============ 快捷记事 ============
+const noteArea = document.getElementById('noteArea');
+noteArea.value = localStorage.getItem('note') || '';
+let noteTimer;
+function saveNote() {
+  clearTimeout(noteTimer);
+  document.getElementById('noteStatus').textContent = '保存中...';
+  noteTimer = setTimeout(() => {
+    localStorage.setItem('note', noteArea.value);
+    document.getElementById('noteStatus').textContent = '已自动保存';
+    updateStats();
+  }, 500);
+}
+noteArea.addEventListener('input', updateStats);
+
+// ============ 计算器 ============
+let calcExpr = '';
+function calcNum(n) { calcExpr += n; updateCalcDisplay(); }
+function calcOp(o) { calcExpr += o; updateCalcDisplay(); }
+function calcInput(c) { calcExpr += c; updateCalcDisplay(); }
+function calcClear() { calcExpr = ''; updateCalcDisplay(); }
+function calcEq() {
+  try {
+    const result = eval(calcExpr);
+    calcExpr = String(result);
+    updateCalcDisplay();
+  } catch(e) {
+    document.getElementById('calcDisplay').textContent = '错误';
+    calcExpr = '';
+  }
+}
+function updateCalcDisplay() {
+  document.getElementById('calcDisplay').textContent = calcExpr || '0';
+}
+
+// ============ 番茄钟 ============
+let pomoSeconds = 25 * 60;
+let pomoTimer = null;
+let pomoCount = parseInt(localStorage.getItem('pomoCount') || '0');
+document.getElementById('pomoCount').textContent = pomoCount;
+function updatePomoDisplay() {
+  const m = Math.floor(pomoSeconds / 60);
+  const s = pomoSeconds % 60;
+  document.getElementById('pomodoroDisplay').textContent =
+    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function pomoStart() {
+  if (pomoTimer) {
+    clearInterval(pomoTimer);
+    pomoTimer = null;
+    return;
+  }
+  pomoTimer = setInterval(() => {
+    pomoSeconds--;
+    if (pomoSeconds <= 0) {
+      clearInterval(pomoTimer);
+      pomoTimer = null;
+      pomoCount++;
+      localStorage.setItem('pomoCount', pomoCount);
+      document.getElementById('pomoCount').textContent = pomoCount;
+      pomoSeconds = 25 * 60;
+      alert('番茄钟完成！休息一下吧 🎉');
+      updateStats();
+    }
+    updatePomoDisplay();
+  }, 1000);
+}
+function pomoReset() {
+  clearInterval(pomoTimer);
+  pomoTimer = null;
+  pomoSeconds = 25 * 60;
+  updatePomoDisplay();
+}
+updatePomoDisplay();
+
+// ============ 饮水打卡 ============
+let waterCups = parseInt(localStorage.getItem('waterCups') || '0');
+function renderWater() {
+  document.getElementById('waterCups').textContent = waterCups;
+  document.getElementById('waterFill').style.height = Math.min(100, waterCups/8*100) + '%';
+  updateStats();
+}
+function addWater() {
+  if (waterCups < 8) waterCups++;
+  localStorage.setItem('waterCups', waterCups);
+  renderWater();
+}
+function resetWater() {
+  waterCups = 0;
+  localStorage.setItem('waterCups', waterCups);
+  renderWater();
+}
+renderWater();
+
+// ============ 统计 ============
+function updateStats() {
+  const doneCount = todos.filter(t => t.done).length;
+  document.getElementById('statTodo').textContent = doneCount;
+  document.getElementById('statPomo').textContent = pomoCount;
+  document.getElementById('statWater').textContent = waterCups;
+  document.getElementById('statWords').textContent = noteArea.value.length;
+}
+updateStats();
+</script>
+
+</body>
+</html>
